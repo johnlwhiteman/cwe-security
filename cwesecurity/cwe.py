@@ -317,10 +317,4 @@ def _write(path, content, sortKeys=False):
         _ex(f"Can't write to {path}: {e}")
 
 if __name__ == "__main__":
-    cwe = Cwe()
-    x = cwe.getReferences()
-    i = 0
-    for _x in x:
-        print(_x)
-        i += 1
-    print(i)
+    pass

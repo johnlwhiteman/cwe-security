@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent))
@@ -34,7 +35,7 @@ def read(*paths):
             with open(_path) as fd:
                 return json.load(fd)
     except (OSError, IOError) as e:
-        ex("Can't read {_paths}: {e}")
+        ex(f"Can't read {_paths}: {e}")
 
 def rm(*paths):
     _paths = toList(paths)
@@ -43,7 +44,7 @@ def rm(*paths):
     except OSError:
         pass
 
-def toList(args):
+def toList(args, toNumbers=False):
     if not args or len(args) < 1 or args[0] is None:
         return None
     _args = []
@@ -54,7 +55,12 @@ def toList(args):
             _args.extend(_, list(set))
         else:
             _args.append(_)
+    if toNumbers:
+        return [re.sub("[^0-9]", "", str(_)) for _ in list(set(_args))]
     return [str(_) for _ in list(set(_args))]
+
+def toNumber(arg):
+    re.sub("[^0-9]", "", a_string)
 
 def write(path, content, sortKeys=False):
     try:

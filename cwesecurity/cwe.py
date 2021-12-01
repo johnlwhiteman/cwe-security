@@ -52,7 +52,7 @@ class Cwe():
             d = cleanDbKeys(d)
             _id = d["ID"]
             path = f"{self.dataDir}{os.sep}{key}{os.sep}{_id}.json"
-            url = f"https://cwe.mitre.org/data/{_id}.html"
+            url = f"https://cwe.mitre.org/data/definitions/{_id}.html"
             self.db[_id] = {
                 "id": _id,
                 "key": key,
@@ -73,7 +73,7 @@ class Cwe():
             cweutil.write(path, d, sortKeys =False)
 
     def __createDbCat(self):
-        for cat in self.getCat():
+        for cat in self.getCats():
             try:
                 catId = cat["ID"]
                 self.db[catId]["status"] = cat["Status"]
@@ -91,7 +91,7 @@ class Cwe():
             self.normalizeDb()
 
     def __createDbCwe(self):
-        for cwe in self.getCwe():
+        for cwe in self.getCwes():
             try:
                 cweId = cwe["ID"]
                 self.db[cweId]["status"] = cwe["Status"]
@@ -100,7 +100,7 @@ class Cwe():
         self.normalizeDb()
 
     def __createDbView(self):
-        for view in self.getView():
+        for view in self.getViews():
             try:
                 viewId = view["ID"]
                 nodes = view["Members"]["Has_Member"]
@@ -149,8 +149,7 @@ class Cwe():
             cweutil.ex(f"Unable to extract downloaded CWE content:\n{e}")
 
     def __get(self, ids, key):
-        nodes = self.getDb(key)
-
+        nodes = self.getDbKey(key)
         if not ids:
             for node in nodes:
                 yield cweutil.read(node["path"])
@@ -159,16 +158,52 @@ class Cwe():
                 if node["id"] in ids and node["key"] in key:
                     yield cweutil.read(node["path"])
 
-    def getCat(self, *ids):
-        return self.__get(cweutil.toList(ids), "cat")
+    def get(self, gId):
+        r = self.gets(gId)
+        if r:
+            return next(r)
+        return None
 
-    def getCwe(self, *ids):
-        return self.__get(cweutil.toList(ids), "cwe")
-
-    def getDb(self, *keys):
+    def gets(self, *ids):
         if not self.db:
             self.loadDb()
-        _keys = cweutil.toList(keys)
+        _ids = cweutil.toList(ids, True)
+        if not _ids:
+            for k, v in self.db.items():
+                yield {
+                    "data": cweutil.read(v["path"]),
+                    "meta": v
+                    }
+        else:
+            for k, v in self.db.items():
+                if v["id"] in _ids:
+                    yield {
+                        "data": cweutil.read(v["path"]),
+                        "meta": v
+                    }
+
+    def getCat(self, catId):
+        r = self.getCats(catId)
+        if r:
+            return next(r)
+        return None
+
+    def getCats(self, *ids):
+        return self.__get(cweutil.toList(ids, True), "cat")
+
+    def getCwe(self, cweId):
+        r = self.getCwe(cweId)
+        if r:
+            return next(r)
+        return None
+
+    def getCwes(self, *ids):
+        return self.__get(cweutil.toList(ids, True), "cwe")
+
+    def getDbKey(self, *keys):
+        if not self.db:
+            self.loadDb()
+        _keys = cweutil.toList(keys, False)
         if not _keys:
             for k, v in self.db.items():
                 yield v
@@ -207,8 +242,14 @@ class Cwe():
                         return float(version)
         return None
 
-    def getView(self, *ids):
-        return self.__get(cweutil.toList(ids), "view")
+    def getView(self, viewId):
+        r = self.getViews(viewId)
+        if r:
+            return next(r)
+        return None
+
+    def getViews(self, *ids):
+        return self.__get(cweutil.toList(ids, True), "view")
 
     def hasUpdate(self):
         lVersion = self.getLocalVersion()
